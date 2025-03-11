@@ -1,11 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  createOrUpdateCartItem,
-  fetchCartItemsCount,
-  fetchOrCreateCart,
-} from "./data";
+import { addToCart, fetchCartItemsCount } from "./data";
 import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
 
@@ -32,9 +28,8 @@ export async function addItemToCart(formData: FormData) {
       });
     }
 
-    // Data layer only handles database operations
-    const cart = await fetchOrCreateCart(sessionId);
-    await createOrUpdateCartItem(cart.id, productId, quantity);
+    // Single API call that handles cart creation and adding items
+    await addToCart(productId, quantity, sessionId);
 
     // Revalidate related pages
     revalidatePath("/", "layout");

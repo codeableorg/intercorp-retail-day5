@@ -1,13 +1,17 @@
-import postgres from "postgres";
-import { Cart, Category, Product } from "./types";
+import { Category, Product } from "./types";
+import { API_BASE_URL } from "./config";
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
-
-export async function fetchCategories() {
+export async function fetchCategories(): Promise<Category[]> {
   try {
     const start = Date.now();
 
-    const data = await sql<Category[]>`SELECT * FROM categories`;
+    const response = await fetch(`${API_BASE_URL}/api/categories`);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch categories");
+    }
+
+    const data = await response.json();
 
     const end = Date.now();
     const time = end - start;
@@ -16,7 +20,7 @@ export async function fetchCategories() {
 
     return data;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("API Error:", error);
     throw new Error("Failed to fetch category data.");
   }
 }
@@ -28,18 +32,24 @@ export async function fetchCategoryBySlug(
   try {
     const start = Date.now();
 
-    const data = await sql<
-      Category[]
-    >`SELECT * FROM categories WHERE slug = ${slug}`;
+    const response = await fetch(
+      `${API_BASE_URL}/api/categories/${encodeURIComponent(slug)}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch category");
+    }
+
+    const data = await response.json();
 
     const end = Date.now();
     const time = end - start;
 
     console.log(`Category data fetched in ${time}ms`);
 
-    return data[0] || null;
+    return data;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("API Error:", error);
     throw new Error("Failed to fetch category data.");
   }
 }
@@ -53,12 +63,22 @@ export async function fetchProductsByCategorySlug(
   try {
     const start = Date.now();
 
-    const data = await sql<Product[]>`
-      SELECT p.*
-      FROM products AS p
-      LEFT JOIN categories AS c ON p.category_id = c.id
-      WHERE c.slug = ${slug} AND p.price BETWEEN ${minPrice} AND ${maxPrice}
-    `;
+    const queryParams = new URLSearchParams({
+      minPrice: minPrice?.toString() || "0",
+      maxPrice: maxPrice?.toString() || "999999",
+    });
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/categories/${encodeURIComponent(
+        slug
+      )}/products?${queryParams}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch products");
+    }
+
+    const data = await response.json();
 
     const end = Date.now();
     const time = end - start;
@@ -67,7 +87,7 @@ export async function fetchProductsByCategorySlug(
 
     return data;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("API Error:", error);
     throw new Error("Failed to fetch product data.");
   }
 }
@@ -77,72 +97,57 @@ export async function fetchProductById(id: number): Promise<Product | null> {
   try {
     const start = Date.now();
 
-    const data = await sql<Product[]>`SELECT * FROM products WHERE id = ${id}`;
+    const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch product");
+    }
+
+    const data = await response.json();
 
     const end = Date.now();
     const time = end - start;
 
     console.log(`Product data fetched in ${time}ms`);
 
-    return data[0] || null;
+    return data;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("API Error:", error);
     throw new Error("Failed to fetch product data.");
   }
 }
 
-// Fetch cart or create it if not exists
-export async function fetchOrCreateCart(sessionId: string) {
-  try {
-    const start = Date.now();
-
-    const data = await sql<Cart[]>`
-      SELECT * FROM carts WHERE session_id = ${sessionId}
-    `;
-
-    let cart = data[0];
-    if (!cart) {
-      const data = await sql<Cart[]>`
-      INSERT INTO carts (user_id, session_id)
-      VALUES (NULL, ${sessionId})
-      RETURNING *`;
-
-      cart = data[0];
-    }
-
-    const end = Date.now();
-    const time = end - start;
-    console.log(`Cart data fetched in ${time}ms`);
-    return cart;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch or create cart.");
-  }
-}
-
 // Create or Update cart item
-export async function createOrUpdateCartItem(
-  cartId: number,
+export async function addToCart(
   productId: number,
-  quantity: number
+  quantity: number,
+  sessionId: string
 ) {
   try {
     const start = Date.now();
 
-    await sql`
-      INSERT INTO cart_items (cart_id, product_id, quantity)
-      VALUES (${cartId}, ${productId}, ${quantity})
-      ON CONFLICT (cart_id, product_id) 
-      DO UPDATE SET quantity = cart_items.quantity + EXCLUDED.quantity
-    `;
+    const response = await fetch(`${API_BASE_URL}/api/cart`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ productId, quantity }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to add item to cart");
+    }
 
     const end = Date.now();
     const time = end - start;
 
-    console.log(`Cart items count fetched in ${time}ms`);
+    console.log(`Item added to cart in ${time}ms`);
+
+    return await response.json(); // Return the result which includes the cart
   } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch cart items count.");
+    console.error("API Error:", error);
+    throw new Error("Failed to add item to cart");
   }
 }
 
@@ -151,20 +156,26 @@ export async function fetchCartItemsCount(sessionId: string): Promise<number> {
   try {
     const start = Date.now();
 
-    const data = await sql`
-      SELECT SUM(quantity) as total FROM cart_items
-      JOIN carts ON cart_items.cart_id = carts.id
-      WHERE carts.session_id = ${sessionId}
-    `;
+    const response = await fetch(`${API_BASE_URL}/api/cart/count`, {
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch cart count");
+    }
+
+    const data = await response.json();
 
     const end = Date.now();
     const time = end - start;
 
-    console.log(`Cart items count fetched in ${time}ms`);
+    console.log(`Cart count fetched in ${time}ms`);
 
-    return Number(data[0]?.total || 0);
+    return data.count;
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("API Error:", error);
     throw new Error("Failed to fetch cart items count.");
   }
 }
