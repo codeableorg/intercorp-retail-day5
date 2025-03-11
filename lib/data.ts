@@ -1,4 +1,4 @@
-import { Category, Product } from "./types";
+import { CartWithItems, Category, Product } from "./types";
 import { API_BASE_URL } from "./config";
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -177,5 +177,95 @@ export async function fetchCartItemsCount(sessionId: string): Promise<number> {
   } catch (error) {
     console.error("API Error:", error);
     throw new Error("Failed to fetch cart items count.");
+  }
+}
+
+export async function fetchCart(
+  sessionId: string
+): Promise<CartWithItems | null> {
+  try {
+    const start = Date.now();
+
+    const response = await fetch(`${API_BASE_URL}/api/cart`, {
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch cart");
+    }
+
+    const data = await response.json();
+
+    const end = Date.now();
+    const time = end - start;
+
+    console.log(`Cart with items fetched in ${time}ms`);
+
+    return data;
+  } catch (error) {
+    console.error("API Error:", error);
+    throw new Error("Failed to fetch cart data.");
+  }
+}
+
+export async function updateCartItemQuantity(
+  itemId: number,
+  quantity: number,
+  sessionId: string
+) {
+  try {
+    const start = Date.now();
+
+    const response = await fetch(`${API_BASE_URL}/api/cart/items/${itemId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ quantity }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update cart item quantity");
+    }
+
+    const end = Date.now();
+    const time = end - start;
+
+    console.log(`Cart item quantity updated in ${time}ms`);
+
+    return await response.json();
+  } catch (error) {
+    console.error("API Error:", error);
+    throw new Error("Failed to update cart item quantity");
+  }
+}
+
+export async function removeCartItem(itemId: number, sessionId: string) {
+  try {
+    const start = Date.now();
+
+    const response = await fetch(`${API_BASE_URL}/api/cart/items/${itemId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to remove cart item");
+    }
+
+    const end = Date.now();
+    const time = end - start;
+
+    console.log(`Cart item removed in ${time}ms`);
+
+    return await response.json();
+  } catch (error) {
+    console.error("API Error:", error);
+    throw new Error("Failed to remove cart item");
   }
 }

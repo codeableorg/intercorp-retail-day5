@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import postgres from "postgres";
-import { Cart } from "@/lib/types";
+import { Cart, CartWithItems } from "@/lib/types";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -16,16 +16,69 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get cart by session ID
-    const data = await sql<Cart[]>`
+    // Get cart
+    const cartData = await sql<Cart[]>`
       SELECT * FROM carts WHERE session_id = ${sessionId}
     `;
 
-    return NextResponse.json(data[0] || null);
+    if (cartData.length === 0) {
+      return NextResponse.json(null);
+    }
+
+    const cart = cartData[0];
+
+    // Get cart items with product details
+    const items = await sql`
+      SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, ci.created_at, 
+             p.id AS "product.id", p.title AS "product.title", 
+             p.img_src AS "product.img_src", p.alt AS "product.alt", 
+             p.price AS "product.price", p.description AS "product.description", 
+             p.category_id AS "product.category_id", p.is_on_sale AS "product.is_on_sale", 
+             p.features AS "product.features", p.created_at AS "product.created_at"
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.id
+      WHERE ci.cart_id = ${cart.id}
+    `;
+
+    // Calculate total
+    let total = 0;
+    const formattedItems = items.map((item) => {
+      const product = {
+        id: item["product.id"],
+        title: item["product.title"],
+        img_src: item["product.img_src"],
+        alt: item["product.alt"],
+        price: item["product.price"],
+        description: item["product.description"],
+        category_id: item["product.category_id"],
+        is_on_sale: item["product.is_on_sale"],
+        features: item["product.features"],
+        created_at: item["product.created_at"],
+      };
+
+      total += Number(product.price) * item.quantity;
+
+      return {
+        id: item.id,
+        cart_id: item.cart_id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        created_at: item.created_at,
+        product,
+      };
+    });
+
+    const cartWithItems: CartWithItems = {
+      ...cart,
+      items: formattedItems,
+      total,
+    };
+
+    return NextResponse.json(cartWithItems);
   } catch (error) {
     console.error("Database Error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch cart data." },
+      { error: "Failed to fetch cart items." },
       { status: 500 }
     );
   }

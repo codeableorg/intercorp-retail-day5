@@ -49,3 +49,12 @@ export interface CartItem {
   quantity: number;
   created_at: Date;
 }
+
+type CartItemWithProduct = CartItem & {
+  product: Product;
+};
+
+export type CartWithItems = Cart & {
+  items: CartItemWithProduct[];
+  total: number;
+};
