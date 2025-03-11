@@ -2,10 +2,18 @@ import { Button, Container, Section } from "@/components/ui";
 
 import styles from "./page.module.css";
 import Link from "next/link";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { RemoveButton } from "@/components/cart/remove-button";
+import { QuantityControl } from "@/components/cart/quantity-control";
+import { cookies } from "next/headers";
+import { fetchCart } from "@/lib/data";
 
 export default async function Page() {
-  const cart = { items: [], total: 0 };
+  // Get the session ID from cookies
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("cart_session_id")?.value;
+
+  // // If no session, there's no cart, so default to empty
+  const cart = sessionId ? await fetchCart(sessionId) : { items: [], total: 0 };
 
   return (
     <Section>
@@ -27,31 +35,13 @@ export default async function Page() {
                     <h2 className={styles["cart__item-title"]}>
                       {product.title}
                     </h2>
-                    <Button type="submit" size="sm-icon" variant="outline">
-                      <Trash2 />
-                    </Button>
+                    <RemoveButton itemId={id} />
                   </div>
                   <div className={styles["cart__item-footer"]}>
                     <p className={styles["cart__item-price"]}>
                       ${product.price}
                     </p>
-                    <div className={styles["cart__item-quantity"]}>
-                      <Button
-                        type="submit"
-                        variant="outline"
-                        size="sm-icon"
-                        disabled={quantity <= 1}
-                      >
-                        <Minus />
-                      </Button>
-                      <span className={styles["cart__item-display"]}>
-                        {quantity}
-                      </span>
-
-                      <Button type="submit" variant="outline" size="sm-icon">
-                        <Plus />
-                      </Button>
-                    </div>
+                    <QuantityControl itemId={id} quantity={quantity} />
                   </div>
                 </div>
               </div>
