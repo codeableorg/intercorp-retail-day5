@@ -173,46 +173,58 @@ export async function createOrderFromCheckout(formData: FormData) {
   redirect(`/thank-you?order=${result.order.id}`);
 }
 
-export async function signUp(formData: FormData) {
+export async function signUp(prevState: { error: string }, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
   if (!email || !password) {
-    throw new Error("Email and password are required");
+    return { error: "Email and password are required" };
   }
 
-  const data = await registerUser(email, password);
+  try {
+    const data = await registerUser(email, password);
 
-  // Set auth token cookie
-  cookies().set("auth_token", data.token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: "/",
-    sameSite: "lax",
-  });
+    // Set auth token cookie
+    cookies().set("auth_token", data.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+      sameSite: "lax",
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "An error occurred",
+    };
+  }
 
   redirect("/");
 }
 
-export async function login(formData: FormData) {
+export async function login(prevState: { error: string }, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
   if (!email || !password) {
-    throw new Error("Email and password are required");
+    return { error: "Email and password are required" };
   }
 
-  const data = await loginUser(email, password);
+  try {
+    const data = await loginUser(email, password);
 
-  // Set auth token cookie
-  cookies().set("auth_token", data.token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: "/",
-    sameSite: "lax",
-  });
+    // Set auth token cookie
+    cookies().set("auth_token", data.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+      sameSite: "lax",
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "An error occurred",
+    };
+  }
 
   redirect("/");
 }
