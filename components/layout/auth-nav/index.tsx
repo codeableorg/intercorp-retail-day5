@@ -9,10 +9,7 @@ type User = null | {
 };
 
 export default function AuthNav() {
-  const user: User = {
-    name: "Juanito",
-    email: "juanito@mail.com",
-  };
+  const user: User | null = null;
 
   return (
     <div className={styles["auth-nav"]}>
