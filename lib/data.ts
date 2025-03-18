@@ -269,3 +269,49 @@ export async function removeCartItem(itemId: number, sessionId: string) {
     throw new Error("Failed to remove cart item");
   }
 }
+
+export async function createOrder(
+  orderData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    company?: string;
+    address: string;
+    city: string;
+    country: string;
+    region: string;
+    zip: string;
+    phone: string;
+  },
+  sessionId: string
+) {
+  try {
+    const start = Date.now();
+
+    const response = await fetch(`${API_BASE_URL}/api/orders`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to create order");
+    }
+
+    const data = await response.json();
+
+    const end = Date.now();
+    const time = end - start;
+
+    console.log(`Order created in ${time}ms`);
+
+    return data;
+  } catch (error) {
+    console.error("API Error:", error);
+    throw new Error("Failed to create order");
+  }
+}

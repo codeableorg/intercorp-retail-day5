@@ -1,18 +1,19 @@
 import { X } from "lucide-react";
 
 import {
-  Button,
   Container,
   InputField,
   Section,
   Separator,
   SelectField,
-  ContainerLoader,
 } from "@/components/ui";
 
 import styles from "./page.module.css";
 import { fetchCart } from "@/lib/data";
 import { cookies } from "next/headers";
+import { createOrderFromCheckout } from "@/lib/actions";
+import { redirect } from "next/navigation";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const countryOptions = [
   { value: "AR", label: "Argentina" },
@@ -45,7 +46,7 @@ export default async function Checkout() {
   const cart = await fetchCart(sessionId!);
 
   if (!cart || !cart.items.length) {
-    return <ContainerLoader />;
+    redirect("/cart");
   }
 
   return (
@@ -84,7 +85,10 @@ export default async function Checkout() {
               </div>
             </div>
           </div>
-          <form className={styles.checkout__form}>
+          <form
+            action={createOrderFromCheckout}
+            className={styles.checkout__form}
+          >
             <fieldset>
               <legend className={styles.checkout__legend}>
                 Información de contacto
@@ -159,9 +163,13 @@ export default async function Checkout() {
                 />
               </div>
             </fieldset>
-            <Button size="xl" className={styles.checkout__submit}>
+            <SubmitButton
+              loadingText="Confirmando..."
+              size="xl"
+              className={styles.checkout__submit}
+            >
               Confirmar Orden
-            </Button>
+            </SubmitButton>
           </form>
         </div>
       </Container>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   addToCart,
+  createOrder,
   fetchCart,
   fetchCartItemsCount,
   removeCartItem,
@@ -10,6 +11,7 @@ import {
 } from "./data";
 import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
+import { redirect } from "next/navigation";
 
 export async function addItemToCart(formData: FormData) {
   try {
@@ -113,4 +115,60 @@ export async function removeItem(itemId: number) {
     console.error("Error removing item:", error);
     throw new Error("Failed to remove item");
   }
+}
+
+export async function createOrderFromCheckout(formData: FormData) {
+  let result;
+  try {
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get("cart_session_id")?.value;
+
+    if (!sessionId) {
+      throw new Error("No session found");
+    }
+
+    // Extract form data
+    const orderData = {
+      email: formData.get("email") as string,
+      firstName: formData.get("firstName") as string,
+      lastName: formData.get("lastName") as string,
+      company: formData.get("company") as string,
+      address: formData.get("address") as string,
+      city: formData.get("city") as string,
+      country: formData.get("country") as string,
+      region: formData.get("region") as string,
+      zip: formData.get("zip") as string,
+      phone: formData.get("phone") as string,
+    };
+
+    // Validate required fields
+    const requiredFields = [
+      "email",
+      "firstName",
+      "lastName",
+      "address",
+      "city",
+      "country",
+      "region",
+      "zip",
+      "phone",
+    ];
+
+    for (const field of requiredFields) {
+      if (!orderData[field as keyof typeof orderData]) {
+        throw new Error(`Field ${field} is required`);
+      }
+    }
+
+    // Create the order
+    result = await createOrder(orderData, sessionId);
+
+    // After creating the order successfully, redirect to the thank you page
+    // And include the order ID in the URL for reference
+    revalidatePath("/", "layout"); // Update cart count in layout
+  } catch (error) {
+    console.error("Error creating order:", error);
+    throw new Error("Failed to create order");
+  }
+  redirect(`/thank-you?order=${result.order.id}`);
 }
