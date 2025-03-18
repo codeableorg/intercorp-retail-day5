@@ -233,3 +233,28 @@ export async function logout() {
   cookies().delete("auth_token");
   redirect("/");
 }
+
+let count = 0;
+
+export async function getCount() {
+  // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  return count;
+}
+
+export async function updateCountAction(formData: FormData) {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const randomNumber = Math.floor(Math.random() * 100);
+  if (randomNumber > 50) {
+    throw new Error("Random error occurred");
+  }
+
+  const type = formData.get("type") as string;
+  if (type === "increment") count++;
+  else if (type === "decrement") count--;
+  else if (type === "change") count += Number(formData.get("value"));
+
+  revalidatePath("/playground");
+  // return { count };
+}
