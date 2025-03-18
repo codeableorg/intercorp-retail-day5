@@ -4,16 +4,13 @@ import styles from "./page.module.css";
 import Link from "next/link";
 import { RemoveButton } from "@/components/cart/remove-button";
 import { QuantityControl } from "@/components/cart/quantity-control";
-import { cookies } from "next/headers";
-import { fetchCart } from "@/lib/data";
+import { fetchCart, getAuthorizationToken } from "@/lib/data";
 
 export default async function Page() {
-  // Get the session ID from cookies
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("cart_session_id")?.value;
+  const token = getAuthorizationToken();
 
-  // // If no session, there's no cart, so default to empty
-  const cart = sessionId ? await fetchCart(sessionId) : { items: [], total: 0 };
+  // // If no token, there's no cart, so default to empty
+  const cart = token ? await fetchCart(token) : { items: [], total: 0 };
 
   return (
     <Section>

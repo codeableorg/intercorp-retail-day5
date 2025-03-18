@@ -9,8 +9,7 @@ import {
 } from "@/components/ui";
 
 import styles from "./page.module.css";
-import { fetchCart } from "@/lib/data";
-import { cookies } from "next/headers";
+import { fetchCart, getAuthorizationToken, getCurrentUser } from "@/lib/data";
 import { createOrderFromCheckout } from "@/lib/actions";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -40,10 +39,10 @@ const countryOptions = [
 ];
 
 export default async function Checkout() {
-  const cookieStore = cookies();
-  const sessionId = cookieStore.get("cart_session_id")?.value;
+  const token = getAuthorizationToken();
+  const user = await getCurrentUser(token!);
 
-  const cart = await fetchCart(sessionId!);
+  const cart = await fetchCart(token!);
 
   if (!cart || !cart.items.length) {
     redirect("/cart");
@@ -99,6 +98,8 @@ export default async function Checkout() {
                 type="email"
                 required
                 autoComplete="email"
+                defaultValue={user?.email}
+                readOnly={!!user?.email}
               />
             </fieldset>
             <Separator className={styles.checkout__separator} />

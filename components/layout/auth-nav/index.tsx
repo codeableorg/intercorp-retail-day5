@@ -2,14 +2,13 @@ import { Button, Container } from "@/components/ui";
 
 import styles from "./styles.module.css";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/data";
+import { logout } from "@/lib/actions";
 
-type User = null | {
-  name: string;
-  email: string;
-};
-
-export default function AuthNav() {
-  const user: User | null = null;
+export default async function AuthNav() {
+  const token = cookies().get("auth_token")?.value;
+  const user = token ? await getCurrentUser(token) : null;
 
   return (
     <div className={styles["auth-nav"]}>
@@ -19,15 +18,18 @@ export default function AuthNav() {
             {user ? (
               <>
                 <li className={styles["auth-nav__item"]}>
-                  Bienvenido {user.name || user.email}
+                  Bienvenido {user.email}
                 </li>
                 <li className={styles["auth-nav__item"]}>
-                  <Button
-                    variant="ghost"
-                    className={styles["auth-nav__button"]}
-                  >
-                    Cerrar sesión
-                  </Button>
+                  <form action={logout}>
+                    <Button
+                      variant="ghost"
+                      type="submit"
+                      className={styles["auth-nav__button"]}
+                    >
+                      Cerrar sesión
+                    </Button>
+                  </form>
                 </li>
               </>
             ) : (

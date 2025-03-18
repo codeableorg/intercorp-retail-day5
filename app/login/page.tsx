@@ -2,6 +2,7 @@ import { Container, InputField, Section } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/submit-button";
 import Link from "next/link";
 import styles from "./page.module.css";
+import { login } from "@/lib/actions";
 
 export default function Page() {
   const error = null;
@@ -10,7 +11,7 @@ export default function Page() {
     <Section>
       <Container className={styles.login}>
         <h1 className={styles.login__title}>Inicia sesión en tu cuenta</h1>
-        <form className={styles.login__form}>
+        <form className={styles.login__form} action={login}>
           <InputField
             label="Correo electrónico"
             name="email"
