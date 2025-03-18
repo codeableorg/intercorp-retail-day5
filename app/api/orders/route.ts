@@ -1,24 +1,31 @@
 import { NextResponse } from "next/server";
 import postgres from "postgres";
-import { Cart } from "@/lib/types";
+import { getUserFromToken } from "../utils";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 export async function POST(request: Request) {
   try {
     // Get session from Authorization header
-    const sessionId = request.headers
-      .get("Authorization")
-      ?.replace("Bearer ", "");
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
 
-    if (!sessionId) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the cart for this session
-    const cartData = await sql<Cart[]>`
-      SELECT * FROM carts WHERE session_id = ${sessionId}
-    `;
+    let cartQuery;
+
+    // Try to get user from token first
+    const user = await getUserFromToken(token);
+
+    if (user) {
+      // User is authenticated, get their cart
+      cartQuery = sql`SELECT * FROM carts WHERE user_id = ${user.id}`;
+    } else {
+      // No user, try to get cart by session ID
+      cartQuery = sql`SELECT * FROM carts WHERE session_id = ${token}`;
+    }
+    const cartData = await cartQuery;
 
     if (cartData.length === 0) {
       return NextResponse.json({ error: "Cart not found" }, { status: 404 });

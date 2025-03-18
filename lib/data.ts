@@ -1,5 +1,20 @@
-import { CartWithItems, Category, Product } from "./types";
+import { CartWithItems, Category, Product, User } from "./types";
 import { API_BASE_URL } from "./config";
+import { cookies } from "next/headers";
+
+// Helper function to get the appropriate authorization token
+export function getAuthorizationToken() {
+  const cookiesStore = cookies();
+  const authToken = cookiesStore.get("auth_token")?.value;
+
+  if (authToken) {
+    // If user is logged in, use the auth token
+    return authToken;
+  } else {
+    // No user, use the cart session ID
+    return cookiesStore.get("cart_session_id")?.value;
+  }
+}
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
@@ -121,7 +136,7 @@ export async function fetchProductById(id: number): Promise<Product | null> {
 export async function addToCart(
   productId: number,
   quantity: number,
-  sessionId: string
+  token: string
 ) {
   try {
     const start = Date.now();
@@ -129,7 +144,7 @@ export async function addToCart(
     const response = await fetch(`${API_BASE_URL}/api/cart`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${sessionId}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ productId, quantity }),
@@ -152,13 +167,13 @@ export async function addToCart(
 }
 
 // fetch cart items count by session id
-export async function fetchCartItemsCount(sessionId: string): Promise<number> {
+export async function fetchCartItemsCount(token: string): Promise<number> {
   try {
     const start = Date.now();
 
     const response = await fetch(`${API_BASE_URL}/api/cart/count`, {
       headers: {
-        Authorization: `Bearer ${sessionId}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -180,15 +195,13 @@ export async function fetchCartItemsCount(sessionId: string): Promise<number> {
   }
 }
 
-export async function fetchCart(
-  sessionId: string
-): Promise<CartWithItems | null> {
+export async function fetchCart(token: string): Promise<CartWithItems | null> {
   try {
     const start = Date.now();
 
     const response = await fetch(`${API_BASE_URL}/api/cart`, {
       headers: {
-        Authorization: `Bearer ${sessionId}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -213,7 +226,7 @@ export async function fetchCart(
 export async function updateCartItemQuantity(
   itemId: number,
   quantity: number,
-  sessionId: string
+  token: string
 ) {
   try {
     const start = Date.now();
@@ -221,7 +234,7 @@ export async function updateCartItemQuantity(
     const response = await fetch(`${API_BASE_URL}/api/cart/items/${itemId}`, {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${sessionId}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ quantity }),
@@ -243,14 +256,14 @@ export async function updateCartItemQuantity(
   }
 }
 
-export async function removeCartItem(itemId: number, sessionId: string) {
+export async function removeCartItem(itemId: number, token: string) {
   try {
     const start = Date.now();
 
     const response = await fetch(`${API_BASE_URL}/api/cart/items/${itemId}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${sessionId}`,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -283,7 +296,7 @@ export async function createOrder(
     zip: string;
     phone: string;
   },
-  sessionId: string
+  token: string
 ) {
   try {
     const start = Date.now();
@@ -291,7 +304,7 @@ export async function createOrder(
     const response = await fetch(`${API_BASE_URL}/api/orders`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${sessionId}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(orderData),
@@ -314,4 +327,58 @@ export async function createOrder(
     console.error("API Error:", error);
     throw new Error("Failed to create order");
   }
+}
+
+export async function registerUser(email: string, password: string) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Registration failed");
+  }
+
+  return data;
+}
+
+export async function loginUser(email: string, password: string) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Login failed");
+  }
+
+  return data;
+}
+
+export async function getCurrentUser(token?: string): Promise<User | null> {
+  if (!token) return null;
+
+  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+
+  return data;
 }

@@ -6,6 +6,9 @@ import {
   createOrder,
   fetchCart,
   fetchCartItemsCount,
+  getAuthorizationToken,
+  loginUser,
+  registerUser,
   removeCartItem,
   updateCartItemQuantity,
 } from "./data";
@@ -23,12 +26,12 @@ export async function addItemToCart(formData: FormData) {
       throw new Error("Product ID is required");
     }
 
-    const cookieStore = cookies();
-    let sessionId = cookieStore.get("cart_session_id")?.value;
+    let token = getAuthorizationToken();
 
-    if (!sessionId) {
-      sessionId = uuidv4();
-      cookieStore.set("cart_session_id", sessionId, {
+    if (!token) {
+      token = uuidv4();
+      const cookieStore = cookies();
+      cookieStore.set("cart_session_id", token, {
         maxAge: 60 * 60 * 24 * 30, // 30 days
         path: "/",
         httpOnly: true,
@@ -37,7 +40,7 @@ export async function addItemToCart(formData: FormData) {
     }
 
     // Single API call that handles cart creation and adding items
-    await addToCart(productId, quantity, sessionId);
+    await addToCart(productId, quantity, token);
 
     // Revalidate related pages
     revalidatePath("/", "layout");
@@ -48,14 +51,13 @@ export async function addItemToCart(formData: FormData) {
 }
 
 export async function getCartItemsCount() {
-  const cookieStore = cookies();
-  const sessionId = cookieStore.get("cart_session_id")?.value;
+  const token = getAuthorizationToken();
 
-  if (!sessionId) {
+  if (!token) {
     return 0;
   }
 
-  return fetchCartItemsCount(sessionId);
+  return fetchCartItemsCount(token);
 }
 
 export async function changeItemQuantity(
@@ -63,15 +65,14 @@ export async function changeItemQuantity(
   quantityChange: number
 ) {
   try {
-    const cookieStore = cookies();
-    const sessionId = cookieStore.get("cart_session_id")?.value;
+    const token = getAuthorizationToken();
 
-    if (!sessionId) {
-      throw new Error("No session found");
+    if (!token) {
+      throw new Error("No token found");
     }
 
     // First, get the current item to know its quantity
-    const cart = await fetchCart(sessionId);
+    const cart = await fetchCart(token);
 
     const item = cart?.items?.find((item) => item.id === itemId);
 
@@ -86,7 +87,7 @@ export async function changeItemQuantity(
     }
 
     // Update the item quantity
-    await updateCartItemQuantity(itemId, newQuantity, sessionId);
+    await updateCartItemQuantity(itemId, newQuantity, token);
 
     // Revalidate the cart page
     revalidatePath("/cart");
@@ -98,15 +99,14 @@ export async function changeItemQuantity(
 
 export async function removeItem(itemId: number) {
   try {
-    const cookieStore = cookies();
-    const sessionId = cookieStore.get("cart_session_id")?.value;
+    const token = getAuthorizationToken();
 
-    if (!sessionId) {
-      throw new Error("No session found");
+    if (!token) {
+      throw new Error("No token found");
     }
 
     // Remove the item
-    await removeCartItem(itemId, sessionId);
+    await removeCartItem(itemId, token);
 
     // Revalidate the cart page and layout
     revalidatePath("/cart");
@@ -119,12 +119,12 @@ export async function removeItem(itemId: number) {
 
 export async function createOrderFromCheckout(formData: FormData) {
   let result;
-  try {
-    const cookieStore = cookies();
-    const sessionId = cookieStore.get("cart_session_id")?.value;
 
-    if (!sessionId) {
-      throw new Error("No session found");
+  try {
+    const token = getAuthorizationToken();
+
+    if (!token) {
+      throw new Error("No token found");
     }
 
     // Extract form data
@@ -161,7 +161,7 @@ export async function createOrderFromCheckout(formData: FormData) {
     }
 
     // Create the order
-    result = await createOrder(orderData, sessionId);
+    result = await createOrder(orderData, token);
 
     // After creating the order successfully, redirect to the thank you page
     // And include the order ID in the URL for reference
@@ -171,4 +171,53 @@ export async function createOrderFromCheckout(formData: FormData) {
     throw new Error("Failed to create order");
   }
   redirect(`/thank-you?order=${result.order.id}`);
+}
+
+export async function signUp(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
+  const data = await registerUser(email, password);
+
+  // Set auth token cookie
+  cookies().set("auth_token", data.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: "/",
+    sameSite: "lax",
+  });
+
+  redirect("/");
+}
+
+export async function login(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
+  const data = await loginUser(email, password);
+
+  // Set auth token cookie
+  cookies().set("auth_token", data.token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: "/",
+    sameSite: "lax",
+  });
+
+  redirect("/");
+}
+
+export async function logout() {
+  cookies().delete("auth_token");
+  redirect("/");
 }

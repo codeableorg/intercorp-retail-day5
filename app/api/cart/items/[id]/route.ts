@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { Cart } from "@/lib/types";
+import { getUserFromToken } from "@/app/api/utils";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -15,12 +16,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid item ID" }, { status: 400 });
     }
 
-    // Get session from Authorization header
-    const sessionId = request.headers
-      .get("Authorization")
-      ?.replace("Bearer ", "");
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
 
-    if (!sessionId) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -33,12 +31,26 @@ export async function PATCH(
       );
     }
 
-    // Verify item belongs to user's cart
-    const cartData = await sql<Cart[]>`
+    let cartQuery;
+
+    const user = await getUserFromToken(token);
+
+    if (user) {
+      cartQuery = sql<Cart[]>`
       SELECT c.* FROM carts c
       JOIN cart_items ci ON c.id = ci.cart_id
-      WHERE c.session_id = ${sessionId} AND ci.id = ${itemId}
+      WHERE c.user_id = ${user.id} AND ci.id = ${itemId}
     `;
+    } else {
+      cartQuery = sql<Cart[]>`
+      SELECT c.* FROM carts c
+      JOIN cart_items ci ON c.id = ci.cart_id
+      WHERE c.session_id = ${token} AND ci.id = ${itemId}
+    `;
+    }
+
+    // Verify item belongs to user's cart
+    const cartData = await cartQuery;
 
     if (cartData.length === 0) {
       return NextResponse.json(
@@ -75,21 +87,32 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid item ID" }, { status: 400 });
     }
 
-    // Get session from Authorization header
-    const sessionId = request.headers
-      .get("Authorization")
-      ?.replace("Bearer ", "");
+    // Get token from Authorization header
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
 
-    if (!sessionId) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify item belongs to user's cart
-    const cartData = await sql<Cart[]>`
+    const user = await getUserFromToken(token);
+
+    let cartQuery;
+    if (user) {
+      cartQuery = sql<Cart[]>`
       SELECT c.* FROM carts c
       JOIN cart_items ci ON c.id = ci.cart_id
-      WHERE c.session_id = ${sessionId} AND ci.id = ${itemId}
+      WHERE c.user_id = ${user.id} AND ci.id = ${itemId}
     `;
+    } else {
+      cartQuery = sql<Cart[]>`
+      SELECT c.* FROM carts c
+      JOIN cart_items ci ON c.id = ci.cart_id
+      WHERE c.session_id = ${token} AND ci.id = ${itemId}
+    `;
+    }
+
+    // Verify item belongs to user's cart
+    const cartData = await cartQuery;
 
     if (cartData.length === 0) {
       return NextResponse.json(

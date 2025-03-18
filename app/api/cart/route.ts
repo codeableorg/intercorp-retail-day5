@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { Cart, CartWithItems } from "@/lib/types";
+import { getUserFromToken } from "../utils";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -8,18 +9,26 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 export async function GET(request: Request) {
   try {
     // Get session from Authorization header
-    const sessionId = request.headers
-      .get("Authorization")
-      ?.replace("Bearer ", "");
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
 
-    if (!sessionId) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get cart
-    const cartData = await sql<Cart[]>`
-      SELECT * FROM carts WHERE session_id = ${sessionId}
-    `;
+    let cartQuery;
+
+    // Try to get user from token first
+    const user = await getUserFromToken(token);
+
+    if (user) {
+      // User is authenticated, get their cart
+      cartQuery = sql`SELECT * FROM carts WHERE user_id = ${user.id}`;
+    } else {
+      // No user, try to get cart by session ID
+      cartQuery = sql`SELECT * FROM carts WHERE session_id = ${token}`;
+    }
+
+    const cartData = await cartQuery;
 
     if (cartData.length === 0) {
       return NextResponse.json(null);
@@ -89,27 +98,42 @@ export async function POST(request: Request) {
   try {
     const { productId, quantity } = await request.json();
 
-    // Get session from Authorization header
-    const sessionId = request.headers
-      .get("Authorization")
-      ?.replace("Bearer ", "");
+    const token = request.headers.get("Authorization")?.replace("Bearer ", "");
 
-    if (!sessionId) {
+    if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    let cartQuery;
+
+    // Try to get user from token first
+    const user = await getUserFromToken(token);
+
     // Get or create cart
     let cart;
-    const existingCart = await sql<Cart[]>`
-      SELECT * FROM carts WHERE session_id = ${sessionId}
-    `;
+    if (user) {
+      cartQuery = sql`SELECT * FROM carts WHERE user_id = ${user.id}`;
+    } else {
+      cartQuery = sql`SELECT * FROM carts WHERE session_id = ${token}`;
+    }
+
+    const existingCart = await cartQuery;
 
     if (existingCart.length === 0) {
-      const newCart = await sql<Cart[]>`
-        INSERT INTO carts (user_id, session_id)
-        VALUES (NULL, ${sessionId})
-        RETURNING *`;
-      cart = newCart[0];
+      if (user) {
+        // Create a new cart for the user
+        const newCart = await sql<Cart[]>`
+          INSERT INTO carts (user_id, session_id)
+          VALUES (${user.id}, NULL)
+          RETURNING *`;
+        cart = newCart[0];
+      } else {
+        const newCart = await sql<Cart[]>`
+          INSERT INTO carts (user_id, session_id)
+          VALUES (NULL, ${token})
+          RETURNING *`;
+        cart = newCart[0];
+      }
     } else {
       cart = existingCart[0];
     }
