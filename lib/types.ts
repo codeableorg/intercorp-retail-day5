@@ -50,7 +50,7 @@ export interface CartItem {
   created_at: Date;
 }
 
-type CartItemWithProduct = CartItem & {
+export type CartItemWithProduct = CartItem & {
   product: Product;
 };
 

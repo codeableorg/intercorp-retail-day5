@@ -4,13 +4,10 @@ import styles from "./page.module.css";
 import Link from "next/link";
 import { RemoveButton } from "@/components/cart/remove-button";
 import { QuantityControl } from "@/components/cart/quantity-control";
-import { fetchCart, getAuthorizationToken } from "@/lib/data";
+import { fetchCart } from "@/lib/data";
 
 export default async function Page() {
-  const token = getAuthorizationToken();
-
-  // // If no token, there's no cart, so default to empty
-  const cart = token ? await fetchCart(token) : { items: [], total: 0 };
+  const cart = await fetchCart();
 
   return (
     <Section>

@@ -42,7 +42,7 @@ export default async function Checkout() {
   const token = getAuthorizationToken();
   const user = await getCurrentUser(token!);
 
-  const cart = await fetchCart(token!);
+  const cart = await fetchCart();
 
   if (!cart || !cart.items.length) {
     redirect("/cart");

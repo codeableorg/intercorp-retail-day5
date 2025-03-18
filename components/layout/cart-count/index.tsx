@@ -1,11 +1,15 @@
+"use client";
+
 import { Button } from "@/components/ui";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import styles from "./styles.module.css";
-import { getCartItemsCount } from "@/lib/actions";
+import { useCart } from "@/components/cart/cart-context";
 
-export default async function CartCount() {
-  const count = await getCartItemsCount();
+export default function CartCount() {
+  console.log("Renderizando CartCount");
+  const { cart } = useCart();
+  const count = cart?.items.reduce((acc, item) => acc + item.quantity, 0) ?? 0;
 
   return (
     <Button

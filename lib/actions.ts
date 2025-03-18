@@ -43,7 +43,7 @@ export async function addItemToCart(formData: FormData) {
     await addToCart(productId, quantity, token);
 
     // Revalidate related pages
-    revalidatePath("/", "layout");
+    // revalidatePath("/", "layout");
   } catch (error) {
     console.error("Error adding to cart:", error);
     throw new Error("Failed to add item to cart");
@@ -72,7 +72,7 @@ export async function changeItemQuantity(
     }
 
     // First, get the current item to know its quantity
-    const cart = await fetchCart(token);
+    const cart = await fetchCart();
 
     const item = cart?.items?.find((item) => item.id === itemId);
 

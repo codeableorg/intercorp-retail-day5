@@ -195,9 +195,11 @@ export async function fetchCartItemsCount(token: string): Promise<number> {
   }
 }
 
-export async function fetchCart(token: string): Promise<CartWithItems | null> {
+export async function fetchCart(): Promise<CartWithItems | undefined> {
   try {
     const start = Date.now();
+
+    const token = getAuthorizationToken();
 
     const response = await fetch(`${API_BASE_URL}/api/cart`, {
       headers: {

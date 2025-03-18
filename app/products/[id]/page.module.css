@@ -55,10 +55,6 @@
   margin-bottom: var(--space-10);
 }
 
-.product__button {
-  width: 100%;
-}
-
 .product__separator {
   margin-top: var(--space-6);
   margin-bottom: var(--space-6);
