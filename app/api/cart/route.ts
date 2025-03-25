@@ -22,10 +22,10 @@ export async function GET(request: Request) {
 
     if (user) {
       // User is authenticated, get their cart
-      cartQuery = sql`SELECT * FROM carts WHERE user_id = ${user.id}`;
+      cartQuery = sql<Cart[]>`SELECT * FROM carts WHERE user_id = ${user.id}`;
     } else {
       // No user, try to get cart by session ID
-      cartQuery = sql`SELECT * FROM carts WHERE session_id = ${token}`;
+      cartQuery = sql<Cart[]>`SELECT * FROM carts WHERE session_id = ${token}`;
     }
 
     const cartData = await cartQuery;

@@ -8,18 +8,17 @@ import Link from "next/link";
 import { fetchCart } from "@/lib/data";
 import { CartProvider } from "@/components/cart/cart-context";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  console.log("Renderizando layout");
-  const cart = fetchCart();
+  const cart = await fetchCart();
 
   return (
     <html lang="es">
       <body>
-        <CartProvider cartPromise={cart}>
+        <CartProvider initialCart={cart}>
           <div className={styles.root}>
             <header className={styles.root__header}>
               <AuthNav />

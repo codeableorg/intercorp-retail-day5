@@ -195,7 +195,7 @@ export async function fetchCartItemsCount(token: string): Promise<number> {
   }
 }
 
-export async function fetchCart(): Promise<CartWithItems | undefined> {
+export async function fetchCart(): Promise<CartWithItems | null> {
   try {
     const start = Date.now();
 
@@ -211,7 +211,7 @@ export async function fetchCart(): Promise<CartWithItems | undefined> {
       throw new Error("Failed to fetch cart");
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as CartWithItems | null;
 
     const end = Date.now();
     const time = end - start;

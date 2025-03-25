@@ -7,7 +7,6 @@ import styles from "./styles.module.css";
 import { useCart } from "@/components/cart/cart-context";
 
 export default function CartCount() {
-  console.log("Renderizando CartCount");
   const { cart } = useCart();
   const count = cart?.items.reduce((acc, item) => acc + item.quantity, 0) ?? 0;
 

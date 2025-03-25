@@ -1,7 +1,7 @@
 "use client";
 
 import { CartItemWithProduct, CartWithItems, Product } from "@/lib/types";
-import React, { createContext, useContext, use, useOptimistic } from "react";
+import React, { createContext, useContext, useOptimistic } from "react";
 
 // Define the available actions
 type CartAction =
@@ -11,7 +11,11 @@ type CartAction =
   | { type: "CLEAR_CART" };
 
 type CartContextType = {
-  cartPromise: Promise<CartWithItems | undefined>;
+  cart: CartWithItems | null;
+  addItem: (product: Product, quantity: number) => void;
+  updateQuantity: (itemId: number, quantity: number) => void;
+  removeItem: (itemId: number) => void;
+  clearCart: () => void;
 };
 
 // Create the context
@@ -19,7 +23,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // Cart reducer function
 function cartReducer(
-  state: CartWithItems | undefined,
+  state: CartWithItems | null,
   action: CartAction
 ): CartWithItems {
   const currentCart = state || {
@@ -52,9 +56,8 @@ function cartReducer(
         });
       } else {
         // Add new item (note: this is an optimistic update so we create a temporary id)
-        const tempId = Date.now();
         const newItem: CartItemWithProduct = {
-          id: tempId,
+          id: Date.now(),
           cart_id: currentCart.id,
           product_id: product.id,
           quantity,
@@ -137,33 +140,15 @@ function cartReducer(
 // CartProvider component
 export function CartProvider({
   children,
-  cartPromise,
+  initialCart,
 }: {
   children: React.ReactNode;
-  cartPromise: Promise<CartWithItems | undefined>;
+  initialCart: CartWithItems | null;
 }) {
-  return (
-    <CartContext.Provider value={{ cartPromise }}>
-      {children}
-    </CartContext.Provider>
-  );
-}
-
-// Custom hook for using the cart context
-export function useCart() {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-
-  const initialCart = use(context.cartPromise);
-
   const [optimisticCart, updateOptimisticCart] = useOptimistic(
     initialCart,
     cartReducer
   );
-
-  console.log("Optimistic Cart:", optimisticCart);
 
   const addItem = (product: Product, quantity: number) => {
     updateOptimisticCart({ type: "ADD_ITEM", payload: { product, quantity } });
@@ -184,11 +169,26 @@ export function useCart() {
     updateOptimisticCart({ type: "CLEAR_CART" });
   };
 
-  return {
-    cart: optimisticCart,
-    addItem,
-    updateQuantity,
-    removeItem,
-    clearCart,
-  };
+  return (
+    <CartContext.Provider
+      value={{
+        cart: optimisticCart,
+        addItem,
+        updateQuantity,
+        removeItem,
+        clearCart,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+// Custom hook for using the cart context
+export function useCart() {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return context;
 }

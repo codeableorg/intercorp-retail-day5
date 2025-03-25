@@ -5,26 +5,30 @@ import { useCart } from "../../cart/cart-context";
 import { addItemToCart } from "@/lib/actions";
 import styles from "./styles.module.css";
 import { Button } from "@/components/ui";
-import { useTransition } from "react";
+import { useFormStatus } from "react-dom";
 
 export function AddProductForm({ product }: { product: Product }) {
-  const { addItem, cart } = useCart();
-  const [isPending, startTransition] = useTransition();
-  const count = cart?.items.reduce((acc, item) => acc + item.quantity, 0) ?? 0;
+  const { addItem } = useCart();
+
   async function formAction(formData: FormData) {
     addItem(product, 1);
-    startTransition(async () => {
-      await addItemToCart(formData);
-    });
+    addItemToCart(formData);
   }
 
   return (
     <form action={formAction}>
       <input hidden name="product_id" value={product.id} readOnly />
-      <Button size="xl" className={styles.product__button}>
-        {isPending ? "Agregando..." : "Agregar al Carrito"}
-      </Button>
-      {count}
+      <SubmitButton />
     </form>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button size="xl" className={styles.product__button}>
+      {pending ? "Agregando..." : "Agregar al Carrito"}
+    </Button>
   );
 }
