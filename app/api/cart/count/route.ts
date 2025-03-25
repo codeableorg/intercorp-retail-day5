@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import postgres from "postgres";
 import { getUserFromToken } from "../../utils";
 
+export const dynamic = "force-dynamic";
+
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 export async function GET(request: Request) {

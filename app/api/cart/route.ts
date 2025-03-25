@@ -3,6 +3,8 @@ import postgres from "postgres";
 import { Cart, CartWithItems } from "@/lib/types";
 import { getUserFromToken } from "../utils";
 
+export const dynamic = "force-dynamic";
+
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 // Get cart by session ID in Authorization header

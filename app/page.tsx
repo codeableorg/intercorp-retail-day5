@@ -4,6 +4,7 @@ import { Button, Container } from "@/components/ui";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { fetchCategories } from "@/lib/data";
+import Image from "next/image";
 
 const features = [
   {
@@ -71,7 +72,7 @@ export default async function Page() {
                 key={category.title}
               >
                 <div className={styles.category__image}>
-                  <img
+                  <Image
                     src={category.img_src}
                     alt={category.alt || `${category.title}`}
                   />

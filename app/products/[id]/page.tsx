@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 import { notFound } from "next/navigation";
 import { fetchProductById } from "@/lib/data";
 import { AddProductForm } from "@/components/product/add-product-form";
+import Image from "next/image";
 
 export default async function Page({ params }: { params: { id: string } }) {
   const productId = Number(params.id);
@@ -17,7 +18,7 @@ export default async function Page({ params }: { params: { id: string } }) {
       <section className={styles.product}>
         <Container className={styles.product__container}>
           <div className={styles.product__image}>
-            <img
+            <Image
               src={product.img_src}
               alt={product.title}
               className={styles.product__image_content}

@@ -4,6 +4,7 @@ import HeaderActions from "../header-actions";
 import MainNav from "../main-nav";
 import styles from "./styles.module.css";
 import Link from "next/link";
+import Image from "next/image";
 
 const navigation = [
   { to: "/polos", label: "Polos" },
@@ -16,7 +17,7 @@ export default function HeaderMain() {
     <Container className={styles["header-main"]}>
       <div className={styles["header-main__top"]}>
         <Link href="/">
-          <img
+          <Image
             src="/images/fullstock-logo.svg"
             alt="FullStock inicio"
             width="128"

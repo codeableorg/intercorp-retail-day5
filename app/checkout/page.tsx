@@ -13,6 +13,7 @@ import { fetchCart, getAuthorizationToken, getCurrentUser } from "@/lib/data";
 import { createOrderFromCheckout } from "@/lib/actions";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "@/components/ui/submit-button";
+import Image from "next/image";
 
 const countryOptions = [
   { value: "AR", label: "Argentina" },
@@ -60,7 +61,7 @@ export default async function Checkout() {
               {cart?.items?.map(({ product, quantity }) => (
                 <div key={product.id} className={styles.checkout__item}>
                   <div className={styles["checkout__item-image"]}>
-                    <img
+                    <Image
                       src={product.img_src}
                       alt={product.title}
                       className={styles["checkout__item-image-content"]}

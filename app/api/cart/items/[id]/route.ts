@@ -3,6 +3,8 @@ import postgres from "postgres";
 import { Cart } from "@/lib/types";
 import { getUserFromToken } from "@/app/api/utils";
 
+export const dynamic = "force-dynamic";
+
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 // Update cart item quantity

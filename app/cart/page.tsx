@@ -7,6 +7,7 @@ import Link from "next/link";
 import { RemoveButton } from "@/components/cart/remove-button";
 import { QuantityControl } from "@/components/cart/quantity-control";
 import { useCart } from "@/components/cart/cart-context";
+import Image from "next/image";
 
 export default function Page() {
   const { cart } = useCart();
@@ -20,7 +21,7 @@ export default function Page() {
             {cart?.items?.map(({ product, quantity, id }) => (
               <div key={product.id} className={styles.cart__item}>
                 <div className={styles["cart__item-image"]}>
-                  <img
+                  <Image
                     src={product.img_src}
                     alt={product.alt || product.title}
                     className={styles["cart__item-image-content"]}

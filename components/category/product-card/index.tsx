@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "./styles.module.css";
 import { Product } from "@/lib/types";
+import Image from "next/image";
 
 interface ProductCardProps {
   product: Product;
@@ -11,7 +12,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link href={`/products/${product.id}`} className={styles["product-card"]}>
       <div className={styles["product-card__container"]}>
         <div className={styles["product-card__image-container"]}>
-          <img
+          <Image
             src={product.img_src}
             alt={product.title}
             className={styles["product-card__image"]}

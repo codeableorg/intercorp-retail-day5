@@ -8,6 +8,8 @@ import Link from "next/link";
 import { fetchCart } from "@/lib/data";
 import { CartProvider } from "@/components/cart/cart-context";
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
