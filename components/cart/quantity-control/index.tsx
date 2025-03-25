@@ -4,6 +4,8 @@ import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui";
 import { changeItemQuantity } from "@/lib/actions";
 import styles from "./styles.module.css";
+import { useCart } from "../cart-context";
+import { startTransition } from "react";
 
 export function QuantityControl({
   itemId,
@@ -12,6 +14,8 @@ export function QuantityControl({
   itemId: number;
   quantity: number;
 }) {
+  const { updateQuantity } = useCart();
+
   return (
     <div className={styles.quantity}>
       <Button
@@ -20,7 +24,11 @@ export function QuantityControl({
         size="sm-icon"
         disabled={quantity <= 1}
         onClick={() => {
-          changeItemQuantity(itemId, -1);
+          startTransition(() => {
+            if (quantity <= 1) return;
+            updateQuantity(itemId, quantity - 1);
+            changeItemQuantity(itemId, -1);
+          });
         }}
       >
         <Minus />
@@ -32,7 +40,10 @@ export function QuantityControl({
         variant="outline"
         size="sm-icon"
         onClick={() => {
-          changeItemQuantity(itemId, 1);
+          startTransition(() => {
+            updateQuantity(itemId, quantity + 1);
+            changeItemQuantity(itemId, 1);
+          });
         }}
       >
         <Plus />

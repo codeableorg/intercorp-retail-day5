@@ -1,13 +1,15 @@
+"use client";
+
 import { Button, Container, Section } from "@/components/ui";
 
 import styles from "./page.module.css";
 import Link from "next/link";
 import { RemoveButton } from "@/components/cart/remove-button";
 import { QuantityControl } from "@/components/cart/quantity-control";
-import { fetchCart } from "@/lib/data";
+import { useCart } from "@/components/cart/cart-context";
 
-export default async function Page() {
-  const cart = await fetchCart();
+export default function Page() {
+  const { cart } = useCart();
 
   return (
     <Section>
